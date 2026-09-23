@@ -1,0 +1,19 @@
+# references — WPF + OpenSSL референсы, в репо не тащим
+reference/
+references/
+
+.DS_Store
+.idea/
+.vscode/
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+go.work.sum
+
+# Wails
+app/frontend/node_modules/
+app/frontend/dist/
+app/build/bin/
