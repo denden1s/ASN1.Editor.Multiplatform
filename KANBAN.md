@@ -11,7 +11,6 @@ kanban-plugin: board
 
 ## P0 Фундамент
 
-- [ ] T01 Core TLV-парсер DER (offset/header/payload/depth) + тесты на openssl certs #P0 #core
 - [ ] T02 Автодетект DER/PEM/Hex/Base64 (~24 шапки) #P0 #formats
 - [ ] T03 OID-словарь 846 + user dict #P0 #core
 
@@ -29,5 +28,6 @@ kanban-plugin: board
 
 ## Done
 
+- [x] T01 Core TLV-парсер DER + тесты (docker: gofmt/vet/test green) #P0 #core
 - [x] requirements.md + grill-me решения (Wails v2, viewer MVP, max PEM, core lib) #setup
 - [x] PLAN.md + KANBAN.md для Obsidian #setup
