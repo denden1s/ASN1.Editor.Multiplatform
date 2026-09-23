@@ -1,5 +1,5 @@
 {
-  "name": "ASN1 Editor (Go + Wails v2)",
+  "name": "ASN1 Editor Backend (Go + Wails v2)",
   "build": { "dockerfile": "Dockerfile" },
   "remoteUser": "vscode",
   "features": {

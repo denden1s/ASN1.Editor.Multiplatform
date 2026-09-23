@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/go:1-1.25-bookworm
+FROM mcr.microsoft.com/devcontainers/go:1.25-bookworm
 
 # Node 20 for Wails frontend
 ARG NODE_VERSION=20
@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgtk-3-dev \
     libwebkit2gtk-4.1-dev \
     pkg-config \
-    upx-ucl \
     nsis \
     && rm -rf /var/lib/apt/lists/*
 
