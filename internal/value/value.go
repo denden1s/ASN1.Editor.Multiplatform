@@ -104,10 +104,9 @@ func minimalTwosComplement(p []byte) []byte {
 	return p
 }
 
-// bitStringDisplay renders "unused=N set: i,j,k (0xHEX)" or
-// "unused=N (empty)". The hex suffix carries the data bytes (payload
-// past the unused-count octet) and is omitted when there are none.
-// The pad bits of the last content byte must be zero.
+// bitStringDisplay renders "unused=N (0xHEX)" where HEX is the data
+// bytes past the unused-count octet, or "unused=N (empty)" when there
+// are no data bytes. The pad bits of the last content byte must be zero.
 func bitStringDisplay(p []byte) string {
 	if len(p) == 0 {
 		return "<invalid>"
@@ -117,27 +116,16 @@ func bitStringDisplay(p []byte) string {
 		return "<invalid>"
 	}
 	data := p[1:]
-	total := len(data)*8 - unused
-	if total < 0 {
-		return "<invalid>"
-	}
-	if unused > 0 && total > 0 && data[len(data)-1]&byte((1<<uint(unused))-1) != 0 {
-		return "<invalid>"
-	}
-	var set []string
-	for i := 0; i < total; i++ {
-		if data[i/8]&(0x80>>uint(i%8)) != 0 {
-			set = append(set, strconv.Itoa(i))
+	if len(data) == 0 {
+		if unused != 0 {
+			return "<invalid>"
 		}
+		return "unused=0 (empty)"
 	}
-	suffix := ""
-	if len(data) > 0 {
-		suffix = " (0x" + strings.ToUpper(hex.EncodeToString(data)) + ")"
+	if unused > 0 && data[len(data)-1]&byte((1<<uint(unused))-1) != 0 {
+		return "<invalid>"
 	}
-	if len(set) == 0 {
-		return fmt.Sprintf("unused=%d (empty)%s", unused, suffix)
-	}
-	return fmt.Sprintf("unused=%d set: %s%s", unused, strings.Join(set, ","), suffix)
+	return fmt.Sprintf("unused=%d (0x%s)", unused, strings.ToUpper(hex.EncodeToString(data)))
 }
 
 // octetStringDisplay quotes printable ASCII, names an embedded DER TLV
