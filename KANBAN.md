@@ -27,6 +27,7 @@ kanban-plugin: board
 
 ## Done
 
+- [x] DnD чинка (EnableFileDrop + useDropTarget false) + no contextmenu #P1 #gui
 - [x] Вкладки файлов + DnD пачкой (designer, tsc+vite green, часть T08) #P1 #gui
 - [x] OCTET nested expansion (инлайн `TAG { ... }`, EOC-guard) #P1 #core
 - [x] Сайдбар структуры + скрытие (VS Code) (designer, tsc+vite green) #P1 #gui

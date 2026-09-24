@@ -131,8 +131,9 @@ function App() {
     [openPaths],
   );
 
-  // Drag-and-drop onto the window (Wails runtime). Plain browsers have no
-  // runtime — the path input above stays the working fallback.
+  // Drag-and-drop onto the whole window (useDropTarget=false needs no
+  // --wails-drop-target CSS marker). Plain browsers have no runtime —
+  // the path input above stays the working fallback.
   const openRef = useRef(openPaths);
   openRef.current = openPaths;
   useEffect(() => {
@@ -141,7 +142,7 @@ function App() {
         if (paths && paths.length > 0) {
           void openRef.current(paths);
         }
-      }, true);
+      }, false);
     } catch {
       /* no Wails runtime, ignore */
     }
@@ -152,6 +153,15 @@ function App() {
         /* no Wails runtime, ignore */
       }
     };
+  }, []);
+
+  // Suppress the default WebView context menu (no custom menu).
+  useEffect(() => {
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('contextmenu', onContextMenu);
+    return () => window.removeEventListener('contextmenu', onContextMenu);
   }, []);
 
   const activateTab = useCallback((id: number) => {
