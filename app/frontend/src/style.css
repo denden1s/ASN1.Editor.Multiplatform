@@ -674,3 +674,153 @@ input:focus-visible {
   color: var(--danger);
   background: rgba(255, 107, 107, 0.15);
 }
+
+/* ---- cert view ---- */
+
+.cert {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px 24px;
+}
+
+.cert-sec {
+  margin-bottom: 18px;
+}
+
+.cert-sec-h {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 1px solid var(--panel-edge);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.crow {
+  display: flex;
+  gap: 12px;
+  padding: 3px 0;
+  line-height: 1.5;
+}
+
+.ckey {
+  flex: none;
+  width: 150px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.cval {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.cmono {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.cwrap {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.coid {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.cdim {
+  color: var(--faint);
+}
+
+.cline {
+  padding: 1px 0;
+}
+
+.cext {
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 4px 0;
+}
+
+.ccrit {
+  background: rgba(245, 181, 68, 0.13);
+  border: 1px solid rgba(245, 181, 68, 0.4);
+  border-radius: 4px;
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  margin-left: 8px;
+}
+
+.cert-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dim);
+  font-size: 13px;
+  padding: 24px;
+  text-align: center;
+}
+
+/* ---- node hash bar ---- */
+
+.hashbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--panel-edge);
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  min-width: 0;
+}
+
+.hash-key {
+  color: var(--faint);
+  flex: none;
+}
+
+.hash-select {
+  background: #0b1017;
+  color: var(--text);
+  border: 1px solid var(--panel-edge);
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 3px 6px;
+  outline: none;
+  flex: none;
+}
+
+.hash-val {
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.hash-err {
+  color: var(--danger);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.hash-busy {
+  color: var(--faint);
+}

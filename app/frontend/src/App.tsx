@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { OpenFile } from '../wailsjs/go/main/App';
+import { CertView as fetchCertView, OpenFile } from '../wailsjs/go/main/App';
 import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime';
+import { CertView } from './components/CertView';
 import { DumpPanel } from './components/DumpPanel';
 import { HexView } from './components/HexView';
+import { NodeHashBar } from './components/NodeHashBar';
 import { TreeView } from './components/TreeView';
 import { fetchFullHex, findDeepest, flattenTree, hexToBytes, nodeTotal, nodeValue } from './asn1';
-import type { AsnFile, AsnNode } from './asn1';
+import type { AsnCert, AsnFile, AsnNode } from './asn1';
 
-type View = 'hex' | 'dump';
+type View = 'hex' | 'dump' | 'cert';
 
 interface DocTab {
   id: number;
@@ -16,6 +18,8 @@ interface DocTab {
   selected: AsnNode | null;
   collapsed: Set<number>;
   view: View;
+  cert: AsnCert | null;
+  certError: string | null;
 }
 
 const SIDEBAR_KEY = 'asn1.sidebar.visible';
@@ -106,13 +110,32 @@ function App() {
         }
         const total = fv.root.headerLen + fv.root.length;
         const full = await fetchFullHex(fv.path, total);
+        let cert: AsnCert | null = null;
+        let certError: string | null = null;
+        try {
+          cert = await fetchCertView(fv.path);
+        } catch (e) {
+          certError = messageOf(e);
+          if (!/not an x\.509 certificate/i.test(certError)) {
+            setError(certError);
+          }
+        }
         const id = nextId.current;
         nextId.current += 1;
         known.set(fv.path, id);
         known.set(p, id);
         setTabs((prev) => [
           ...prev,
-          { id, file: fv, hex: full, selected: fv.root, collapsed: new Set<number>(), view: 'hex' },
+          {
+            id,
+            file: fv,
+            hex: full,
+            selected: fv.root,
+            collapsed: new Set<number>(),
+            view: 'hex',
+            cert,
+            certError,
+          },
         ]);
         setActiveId(id);
         setPathInput(fv.path);
@@ -396,17 +419,28 @@ function App() {
                 >
                   Dump · {nodes.length}
                 </button>
+                <button
+                  role="tab"
+                  aria-selected={active.view === 'cert'}
+                  className={active.view === 'cert' ? 'tab tab-active' : 'tab'}
+                  onClick={() => setActiveView('cert')}
+                >
+                  Cert
+                </button>
               </div>
             </div>
             {active.view === 'hex' ? (
               <HexView bytes={bytes} selected={selected} onPickOffset={pickOffset} />
-            ) : (
+            ) : active.view === 'dump' ? (
               <DumpPanel
                 root={active.file.root}
                 selectedOffset={selected?.offset ?? null}
                 onSelect={setActiveSelected}
               />
+            ) : (
+              <CertView cert={active.cert} certError={active.certError} />
             )}
+            <NodeHashBar path={active.file.path} offset={selected?.offset ?? null} />
           </section>
         )}
       </main>

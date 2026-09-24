@@ -1,8 +1,9 @@
 import { GetHex } from '../wailsjs/go/main/App';
-import type { main } from '../wailsjs/go/models';
+import type { certview, main } from '../wailsjs/go/models';
 
 export type AsnNode = main.NodeDTO;
 export type AsnFile = main.FileView;
+export type AsnCert = certview.Cert;
 
 /** Full byte length of a node: header + content. */
 export function nodeTotal(n: AsnNode): number {
