@@ -12,6 +12,9 @@ bin/
 *.test
 *.out
 go.work.sum
+# stray `go build` outputs at module roots
+/app/app
+/asn1cli
 
 # Wails
 app/frontend/node_modules/
