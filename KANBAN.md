@@ -15,13 +15,14 @@ kanban-plugin: board
 
 ## P1 Viewer MVP
 
-- [ ] T05 Дерево+hex+asn1parse dump + скролл-синхрон #P1 #gui
+(пусто — все в работе/готово)
 - [ ] T06 Тип-бейдж + конвертер PEM↔DER↔Hex #P1 #formats
 - [ ] T07 Cert-view как Windows + хеши узла #P1 #certview
 - [ ] T08 Табы + split v/h + session backup #P1 #ui
 
 ## In Progress
 
+- [ ] T05 Дерево+hex+dump UI (@designer) #P1 #gui
 - [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 
 ## Done
