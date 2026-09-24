@@ -22,11 +22,11 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] T05 Дерево+hex+dump UI (@designer) #P1 #gui
 - [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 
 ## Done
 
+- [x] T05 Дерево+hex+dump UI (designer, tsc+vite green) #P1 #gui
 - [x] T04 Wails v2 скелет (app+cli, bindings OpenFile/GetHex) #P1 #gui
 - [x] T02 fix: дженерик PEM-шапки (ATTRIBUTE CERTIFICATE и любые) #P0 #formats
 - [x] devcontainers backend+frontend (образы собраны, смок внутри зеленый) #setup
