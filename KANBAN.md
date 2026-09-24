@@ -1,6 +1,7 @@
 ---
 
 kanban-plugin: board
+
 ---
 
 ## Backlog
@@ -9,9 +10,10 @@ kanban-plugin: board
 - [ ] T10 Dock как VSCode (drag-drop, save layout) #P2 #ui
 - [ ] T11 PFX/шифрованные ключи + печать/export #P2 #formats
 
+
 ## P0 Фундамент
 
-(пусто — все в работе/готово)
+
 
 ## P1 Viewer MVP
 
@@ -19,15 +21,17 @@ kanban-plugin: board
 - [ ] T07 Cert-view как Windows + хеши узла #P1 #certview
 - [ ] T08 Табы + split v/h + session backup #P1 #ui
 
+
 ## In Progress
 
-- [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 
 ## Done
 
+- [x] Вкладки файлов + DnD пачкой (designer, tsc+vite green, часть T08) #P1 #gui
 - [x] OCTET nested expansion (инлайн `TAG { ... }`, EOC-guard) #P1 #core
 - [x] Сайдбар структуры + скрытие (VS Code) (designer, tsc+vite green) #P1 #gui
 - [x] OCTET STRING printable/hex (tab/LF/CR + ` (0xHEX)`) #P1 #core
+- [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 - [x] BIT STRING только hex (`unused=N (0xHEX)`) #P1 #core
 - [x] BIT STRING hex в value (`unused/set + (0xHEX)`) #P1 #core
 - [x] T05c Показ значений в UI (designer, tsc+vite green) #P1 #gui
@@ -41,3 +45,12 @@ kanban-plugin: board
 - [x] T01 Core TLV-парсер DER + тесты (docker: gofmt/vet/test green) #P0 #core
 - [x] requirements.md + grill-me решения (Wails v2, viewer MVP, max PEM, core lib) #setup
 - [x] PLAN.md + KANBAN.md для Obsidian #setup
+
+
+
+
+%% kanban:settings
+```
+{"kanban-plugin":"board"}
+```
+%%

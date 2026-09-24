@@ -7,7 +7,16 @@ import { TreeView } from './components/TreeView';
 import { fetchFullHex, findDeepest, flattenTree, hexToBytes, nodeTotal, nodeValue } from './asn1';
 import type { AsnFile, AsnNode } from './asn1';
 
-type Tab = 'hex' | 'dump';
+type View = 'hex' | 'dump';
+
+interface DocTab {
+  id: number;
+  file: AsnFile;
+  hex: string;
+  selected: AsnNode | null;
+  collapsed: Set<number>;
+  view: View;
+}
 
 const SIDEBAR_KEY = 'asn1.sidebar.visible';
 
@@ -18,15 +27,17 @@ function messageOf(e: unknown): string {
   return String(e);
 }
 
+function baseName(p: string): string {
+  const parts = p.split(/[\\/]/);
+  return parts[parts.length - 1] || p;
+}
+
 function App() {
   const [pathInput, setPathInput] = useState('');
-  const [file, setFile] = useState<AsnFile | null>(null);
-  const [hex, setHex] = useState('');
+  const [tabs, setTabs] = useState<DocTab[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<AsnNode | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
-  const [tab, setTab] = useState<Tab>('hex');
   const [sidebarVisible, setSidebarVisible] = useState<boolean>(() => {
     try {
       return window.localStorage.getItem(SIDEBAR_KEY) !== 'false';
@@ -34,6 +45,14 @@ function App() {
       return true;
     }
   });
+
+  const nextId = useRef(1);
+  const tabsRef = useRef<DocTab[]>([]);
+  tabsRef.current = tabs;
+  const activeIdRef = useRef<number | null>(null);
+  activeIdRef.current = activeId;
+
+  const active = tabs.find((t) => t.id === activeId) ?? null;
 
   const toggleSidebar = useCallback(() => {
     setSidebarVisible((prev) => {
@@ -58,24 +77,46 @@ function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleSidebar]);
 
-  const openPath = useCallback(async (raw: string) => {
-    const p = raw.trim();
-    if (!p) {
+  const openPaths = useCallback(async (raws: string[]) => {
+    const paths = raws.map((s) => s.trim()).filter((s) => s.length > 0);
+    if (paths.length === 0) {
       setError('Enter a file path first.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const fv = await OpenFile(p);
-      const total = fv.root.headerLen + fv.root.length;
-      const full = await fetchFullHex(fv.path, total);
-      setFile(fv);
-      setHex(full);
-      setSelected(fv.root);
-      setCollapsed(new Set());
-      setTab('hex');
-      setPathInput(fv.path);
+      const known = new Map<string, number>();
+      for (const t of tabsRef.current) {
+        known.set(t.file.path, t.id);
+      }
+      for (const p of paths) {
+        const hit = known.get(p);
+        if (hit !== undefined) {
+          setActiveId(hit);
+          setPathInput(p);
+          continue;
+        }
+        const fv = await OpenFile(p);
+        const resolved = known.get(fv.path);
+        if (resolved !== undefined) {
+          setActiveId(resolved);
+          setPathInput(fv.path);
+          continue;
+        }
+        const total = fv.root.headerLen + fv.root.length;
+        const full = await fetchFullHex(fv.path, total);
+        const id = nextId.current;
+        nextId.current += 1;
+        known.set(fv.path, id);
+        known.set(p, id);
+        setTabs((prev) => [
+          ...prev,
+          { id, file: fv, hex: full, selected: fv.root, collapsed: new Set<number>(), view: 'hex' },
+        ]);
+        setActiveId(id);
+        setPathInput(fv.path);
+      }
     } catch (e) {
       setError(messageOf(e));
     } finally {
@@ -83,15 +124,22 @@ function App() {
     }
   }, []);
 
+  const openPath = useCallback(
+    (raw: string) => {
+      void openPaths([raw]);
+    },
+    [openPaths],
+  );
+
   // Drag-and-drop onto the window (Wails runtime). Plain browsers have no
   // runtime — the path input above stays the working fallback.
-  const openRef = useRef(openPath);
-  openRef.current = openPath;
+  const openRef = useRef(openPaths);
+  openRef.current = openPaths;
   useEffect(() => {
     try {
       OnFileDrop((_x, _y, paths) => {
         if (paths && paths.length > 0) {
-          void openRef.current(paths[0]);
+          void openRef.current(paths);
         }
       }, true);
     } catch {
@@ -106,33 +154,87 @@ function App() {
     };
   }, []);
 
-  const toggle = useCallback((offset: number) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(offset)) {
-        next.delete(offset);
+  const activateTab = useCallback((id: number) => {
+    const t = tabsRef.current.find((x) => x.id === id);
+    if (!t) {
+      return;
+    }
+    setActiveId(id);
+    setPathInput(t.file.path);
+  }, []);
+
+  const closeTab = useCallback((id: number) => {
+    const cur = tabsRef.current;
+    const idx = cur.findIndex((t) => t.id === id);
+    if (idx === -1) {
+      return;
+    }
+    const rest = cur.filter((t) => t.id !== id);
+    setTabs(rest);
+    if (activeIdRef.current === id) {
+      if (rest.length === 0) {
+        setActiveId(null);
       } else {
-        next.add(offset);
+        const pick = rest[Math.min(idx, rest.length - 1)];
+        setActiveId(pick.id);
+        setPathInput(pick.file.path);
       }
-      return next;
-    });
+    }
+  }, []);
+
+  const setActiveSelected = useCallback((n: AsnNode | null) => {
+    const id = activeIdRef.current;
+    if (id === null) {
+      return;
+    }
+    setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, selected: n } : t)));
+  }, []);
+
+  const setActiveView = useCallback((v: View) => {
+    const id = activeIdRef.current;
+    if (id === null) {
+      return;
+    }
+    setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, view: v } : t)));
+  }, []);
+
+  const toggleNode = useCallback((offset: number) => {
+    const id = activeIdRef.current;
+    if (id === null) {
+      return;
+    }
+    setTabs((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) {
+          return t;
+        }
+        const next = new Set(t.collapsed);
+        if (next.has(offset)) {
+          next.delete(offset);
+        } else {
+          next.add(offset);
+        }
+        return { ...t, collapsed: next };
+      }),
+    );
   }, []);
 
   const pickOffset = useCallback(
     (off: number) => {
-      if (!file) {
+      if (!active) {
         return;
       }
-      const n = findDeepest(file.root, off);
+      const n = findDeepest(active.file.root, off);
       if (n) {
-        setSelected(n);
+        setActiveSelected(n);
       }
     },
-    [file],
+    [active, setActiveSelected],
   );
 
-  const bytes = useMemo(() => hexToBytes(hex), [hex]);
-  const nodes = useMemo(() => (file ? flattenTree(file.root) : []), [file]);
+  const bytes = useMemo(() => hexToBytes(active?.hex ?? ''), [active]);
+  const nodes = useMemo(() => (active ? flattenTree(active.file.root) : []), [active]);
+  const selected = active?.selected ?? null;
 
   return (
     <div className="app">
@@ -153,7 +255,7 @@ function App() {
           className="openform"
           onSubmit={(e) => {
             e.preventDefault();
-            void openPath(pathInput);
+            openPath(pathInput);
           }}
         >
           <input
@@ -168,26 +270,26 @@ function App() {
             {loading ? 'Opening…' : 'Open'}
           </button>
         </form>
-        {file && (
+        {active && (
           <div className="filemeta">
-            {file.typeHint ? (
-              <span className="badge">{file.typeHint}</span>
+            {active.file.typeHint ? (
+              <span className="badge">{active.file.typeHint}</span>
             ) : (
               <span className="badge badge-dim">untyped</span>
             )}
-            <span className="chip">{file.encoding || 'DER'}</span>
-            {file.label && (
-              <span className="chip" title={file.label}>
-                {file.label}
+            <span className="chip">{active.file.encoding || 'DER'}</span>
+            {active.file.label && (
+              <span className="chip" title={active.file.label}>
+                {active.file.label}
               </span>
             )}
           </div>
         )}
       </header>
 
-      {file && (
-        <div className="filepath" title={file.path}>
-          {file.path}
+      {active && (
+        <div className="filepath" title={active.file.path}>
+          {active.file.path}
         </div>
       )}
 
@@ -200,27 +302,63 @@ function App() {
         </div>
       )}
 
+      {tabs.length > 0 && (
+        <div className="filetabs" role="tablist" aria-label="Open files">
+          {tabs.map((t) => (
+            <div
+              key={t.id}
+              role="tab"
+              aria-selected={t.id === active?.id}
+              tabIndex={0}
+              title={t.file.path}
+              className={t.id === active?.id ? 'ftab ftab-active' : 'ftab'}
+              onClick={() => activateTab(t.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  activateTab(t.id);
+                }
+              }}
+            >
+              <span className="ftab-name">{baseName(t.file.path)}</span>
+              {t.file.typeHint && <span className="ftab-badge">{t.file.typeHint}</span>}
+              <button
+                className="ftab-x"
+                aria-label={`Close ${baseName(t.file.path)}`}
+                title="Close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeTab(t.id);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <main className={sidebarVisible ? 'workspace workspace-side' : 'workspace workspace-full'}>
         {sidebarVisible && (
           <aside className="pane tree-pane" aria-label="Structure">
             <div className="pane-head">
               <span className="pane-title">Structure</span>
-              {file && <span className="pane-sub">{nodes.length} nodes</span>}
+              {active && <span className="pane-sub">{nodes.length} nodes</span>}
             </div>
-            {file ? (
+            {active ? (
               <TreeView
-                root={file.root}
+                root={active.file.root}
                 selectedOffset={selected?.offset ?? null}
-                collapsed={collapsed}
-                onSelect={setSelected}
-                onToggle={toggle}
+                collapsed={active.collapsed}
+                onSelect={setActiveSelected}
+                onToggle={toggleNode}
               />
             ) : (
               <div className="side-empty">No file open</div>
             )}
           </aside>
         )}
-        {!file ? (
+        {!active ? (
           <div className="empty">
             <div className="empty-h">No file open</div>
             <p className="empty-p">
@@ -234,29 +372,29 @@ function App() {
               <div className="tabs" role="tablist">
                 <button
                   role="tab"
-                  aria-selected={tab === 'hex'}
-                  className={tab === 'hex' ? 'tab tab-active' : 'tab'}
-                  onClick={() => setTab('hex')}
+                  aria-selected={active.view === 'hex'}
+                  className={active.view === 'hex' ? 'tab tab-active' : 'tab'}
+                  onClick={() => setActiveView('hex')}
                 >
                   Hex · {bytes.length} B
                 </button>
                 <button
                   role="tab"
-                  aria-selected={tab === 'dump'}
-                  className={tab === 'dump' ? 'tab tab-active' : 'tab'}
-                  onClick={() => setTab('dump')}
+                  aria-selected={active.view === 'dump'}
+                  className={active.view === 'dump' ? 'tab tab-active' : 'tab'}
+                  onClick={() => setActiveView('dump')}
                 >
                   Dump · {nodes.length}
                 </button>
               </div>
             </div>
-            {tab === 'hex' ? (
+            {active.view === 'hex' ? (
               <HexView bytes={bytes} selected={selected} onPickOffset={pickOffset} />
             ) : (
               <DumpPanel
-                root={file.root}
+                root={active.file.root}
                 selectedOffset={selected?.offset ?? null}
-                onSelect={setSelected}
+                onSelect={setActiveSelected}
               />
             )}
           </section>
