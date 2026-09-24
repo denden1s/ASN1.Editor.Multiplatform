@@ -40,7 +40,11 @@ func TestDisplayTable(t *testing.T) {
 		{"octet binary", "0402DEAD", "<2 bytes> (0xDEAD)"},
 		{"octet with newline", "0403610A62", "\"a\\nb\""},
 		{"octet binary 4 bytes", "0404DEADBEEF", "<4 bytes> (0xDEADBEEF)"},
-		{"octet nested seq", "04053003020101", "contains SEQUENCE (5 bytes)"},
+		{"octet nested seq", "04053003020101", "SEQUENCE { INTEGER 1 (0x01) }"},
+		{"octet nested two levels", "040730053003020101", "SEQUENCE { SEQUENCE { INTEGER 1 (0x01) } }"},
+		{"octet nested primitive", "0403020101", "INTEGER 1 (0x01)"},
+		{"octet empty seq", "04023000", "SEQUENCE {}"},
+		{"octet eoc fallback", "04020000", "<2 bytes> (0x0000)"},
 		{"null", "0500", "NULL"},
 		{"oid commonName", "0603550403", "2.5.4.3"},
 		{"printable", "130454657374", "Test"},
@@ -87,5 +91,42 @@ func TestDisplayInvalid(t *testing.T) {
 func TestDisplayNil(t *testing.T) {
 	if got := Display(nil); got != "" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestOctetEmbeddedTrimsLong(t *testing.T) {
+	var content []byte
+	for i := 0; i < 20; i++ {
+		content = append(content, 0x02, 0x01, 0x01)
+	}
+	seq := append([]byte{0x30, byte(len(content))}, content...)
+	oct := append([]byte{0x04, byte(len(seq))}, seq...)
+	root, err := asn1.ParseDER(oct)
+	if err != nil {
+		t.Fatalf("ParseDER: %v", err)
+	}
+	got := Display(root)
+	r := []rune(got)
+	if len(r) != maxOctetSummaryRunes+1 {
+		t.Fatalf("rune len %d, want %d; got %q", len(r), maxOctetSummaryRunes+1, got)
+	}
+	if r[len(r)-1] != '…' {
+		t.Fatalf("missing ellipsis terminator: %q", got)
+	}
+}
+
+func TestOctetEmbeddedDepthLimit(t *testing.T) {
+	inner := []byte{0x02, 0x01, 0x01}
+	for i := 0; i < 4; i++ {
+		inner = append([]byte{0x30, byte(len(inner))}, inner...)
+	}
+	oct := append([]byte{0x04, byte(len(inner))}, inner...)
+	root, err := asn1.ParseDER(oct)
+	if err != nil {
+		t.Fatalf("ParseDER: %v", err)
+	}
+	want := "SEQUENCE { SEQUENCE { SEQUENCE { SEQUENCE {...} } } }"
+	if got := Display(root); got != want {
+		t.Fatalf("got %q want %q", got, want)
 	}
 }

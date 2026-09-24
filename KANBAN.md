@@ -25,6 +25,7 @@ kanban-plugin: board
 
 ## Done
 
+- [x] OCTET nested expansion (инлайн `TAG { ... }`, EOC-guard) #P1 #core
 - [x] Сайдбар структуры + скрытие (VS Code) (designer, tsc+vite green) #P1 #gui
 - [x] OCTET STRING printable/hex (tab/LF/CR + ` (0xHEX)`) #P1 #core
 - [x] BIT STRING только hex (`unused=N (0xHEX)`) #P1 #core

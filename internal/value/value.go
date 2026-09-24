@@ -22,8 +22,23 @@ import (
 // Display returns the human-readable payload of n, or "" when the node
 // has no scalar value (constructed or non-universal tags, unhandled
 // universal tags). Malformed payloads report "<invalid>" (times report
-// "<invalid time>").
+// "<invalid time>"). OCTET STRING payloads holding printable text stay
+// quoted; payloads holding a single DER TLV render that TLV inline
+// ("SEQUENCE { INTEGER 1 (0x01) }"); anything else is a hex dump.
 func Display(n *asn1.Node) string {
+	return displayDepth(n, 0)
+}
+
+// maxEmbeddedDepth caps how many constructed levels an OCTET STRING
+// inline expansion may open, counted from the OCTET STRING itself.
+// Deeper nesting collapses to "TAG {...}".
+const maxEmbeddedDepth = 3
+
+// maxOctetSummaryRunes caps the whole OCTET STRING inline summary;
+// longer summaries are cut with "…" at the end.
+const maxOctetSummaryRunes = 300
+
+func displayDepth(n *asn1.Node, depth int) string {
 	if n == nil || n.Tag.Constructed || n.Tag.Class != asn1.ClassUniversal {
 		return ""
 	}
@@ -36,7 +51,7 @@ func Display(n *asn1.Node) string {
 	case 3:
 		return bitStringDisplay(p)
 	case 4:
-		return octetStringDisplay(p)
+		return octetStringDisplay(p, depth)
 	case 5:
 		if len(p) != 0 {
 			return "<invalid>"
@@ -128,17 +143,81 @@ func bitStringDisplay(p []byte) string {
 	return fmt.Sprintf("unused=%d (0x%s)", unused, strings.ToUpper(hex.EncodeToString(data)))
 }
 
-// octetStringDisplay quotes printable ASCII (plus tab/LF/CR), names an embedded DER TLV
-// ("contains SEQUENCE (5 bytes)") without decoding it further, and falls
-// back to "<N bytes> (0xHEX)".
-func octetStringDisplay(p []byte) string {
+// octetStringDisplay quotes printable ASCII (plus tab/LF/CR), renders a
+// payload holding a single DER TLV inline ("SEQUENCE { INTEGER 1 (0x01) }",
+// empty constructed as "TAG {}"), and falls back to "<N bytes> (0xHEX)".
+// A parsed universal tag 0 (EOC) is meaningless content, so it takes the
+// hex fallback too. The inline summary is capped at maxOctetSummaryRunes
+// runes with "…" marking a cut.
+func octetStringDisplay(p []byte, depth int) string {
 	if isPrintableASCII(p) {
 		return strconv.Quote(string(p))
 	}
-	if root, err := asn1.ParseDER(p); err == nil {
-		return fmt.Sprintf("contains %s (%d bytes)", root.TagName, len(p))
+	root, err := asn1.ParseDER(p)
+	if err != nil {
+		return octetHexFallback(p)
 	}
+	if root.Tag.Class == asn1.ClassUniversal && root.Tag.Number == 0 {
+		return octetHexFallback(p)
+	}
+	if depth >= maxEmbeddedDepth {
+		return octetHexFallback(p)
+	}
+	return truncateRunes(summarizeEmbedded(root, depth+1), maxOctetSummaryRunes)
+}
+
+// octetHexFallback dumps a non-text, non-DER payload as "<N bytes> (0xHEX)".
+func octetHexFallback(p []byte) string {
 	return fmt.Sprintf("<%d bytes> (0x%s)", len(p), strings.ToUpper(hex.EncodeToString(p)))
+}
+
+// summarizeEmbedded renders one parsed TLV: constructed nodes open as
+// "TAG { child, ... }", primitive ones as "TAGNAME value".
+func summarizeEmbedded(root *asn1.Node, depth int) string {
+	if root.Tag.Constructed {
+		return expandConstructed(root, depth)
+	}
+	if v := displayDepth(root, depth); v != "" {
+		return root.TagName + " " + v
+	}
+	return root.TagName
+}
+
+// summarizeNode renders one child of an inline expansion: constructed
+// children open recursively, primitives use their own Display.
+func summarizeNode(n *asn1.Node, depth int) string {
+	if n.Tag.Constructed {
+		return expandConstructed(n, depth)
+	}
+	if v := displayDepth(n, depth); v != "" {
+		return n.TagName + " " + v
+	}
+	return n.TagName
+}
+
+// expandConstructed joins child summaries as "TAG { a, b }", "TAG {}" when
+// empty, and "TAG {...}" past maxEmbeddedDepth.
+func expandConstructed(n *asn1.Node, depth int) string {
+	if len(n.Children) == 0 {
+		return n.TagName + " {}"
+	}
+	if depth > maxEmbeddedDepth {
+		return n.TagName + " {...}"
+	}
+	parts := make([]string, 0, len(n.Children))
+	for _, c := range n.Children {
+		parts = append(parts, summarizeNode(c, depth+1))
+	}
+	return n.TagName + " { " + strings.Join(parts, ", ") + " }"
+}
+
+// truncateRunes cuts s to max runes, marking the cut with "…".
+func truncateRunes(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max]) + "…"
 }
 
 func isPrintableASCII(p []byte) bool {
