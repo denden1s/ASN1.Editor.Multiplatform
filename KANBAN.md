@@ -25,6 +25,7 @@ kanban-plugin: board
 
 ## Done
 
+- [x] BIT STRING hex в value (`unused/set + (0xHEX)`) #P1 #core
 - [x] T05c Показ значений в UI (designer, tsc+vite green) #P1 #gui
 - [x] T05b Декод значений полей backend (internal/value + NodeDTO.value) #P1 #core
 - [x] T05 Дерево+hex+dump UI (designer, tsc+vite green) #P1 #gui
