@@ -763,6 +763,32 @@ input:focus-visible {
   margin-left: 8px;
 }
 
+.csig-ok {
+  background: rgba(74, 222, 128, 0.13);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  border-radius: 4px;
+  color: #7ee2a8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  margin-left: 8px;
+}
+
+.csig-bad {
+  background: rgba(255, 107, 107, 0.13);
+  border: 1px solid rgba(255, 107, 107, 0.45);
+  border-radius: 4px;
+  color: #ff9c9c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  margin-left: 8px;
+}
+
 .cert-empty {
   flex: 1;
   display: flex;

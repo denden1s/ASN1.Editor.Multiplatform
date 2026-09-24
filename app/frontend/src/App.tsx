@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CertView as fetchCertView, OpenFile } from '../wailsjs/go/main/App';
+import { CertView as fetchCertView, OpenFile, ReqView as fetchReqView } from '../wailsjs/go/main/App';
 import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime';
 import { CertView } from './components/CertView';
+import { ReqView } from './components/ReqView';
 import { DumpPanel } from './components/DumpPanel';
 import { HexView } from './components/HexView';
 import { NodeHashBar } from './components/NodeHashBar';
 import { TreeView } from './components/TreeView';
 import { fetchFullHex, findDeepest, flattenTree, hexToBytes, nodeTotal, nodeValue } from './asn1';
-import type { AsnCert, AsnFile, AsnNode } from './asn1';
+import type { AsnCert, AsnFile, AsnNode, AsnReq } from './asn1';
 
 type View = 'hex' | 'dump' | 'cert';
 
@@ -20,6 +21,8 @@ interface DocTab {
   view: View;
   cert: AsnCert | null;
   certError: string | null;
+  req: AsnReq | null;
+  reqError: string | null;
 }
 
 const SIDEBAR_KEY = 'asn1.sidebar.visible';
@@ -34,6 +37,26 @@ function messageOf(e: unknown): string {
 function baseName(p: string): string {
   const parts = p.split(/[\\/]/);
   return parts[parts.length - 1] || p;
+}
+
+function certTabEmpty(t: DocTab): string {
+  if (t.certError && !/not an x\.509 certificate/i.test(t.certError)) {
+    return t.certError;
+  }
+  if (t.reqError && !/not a certificate request/i.test(t.reqError)) {
+    return t.reqError;
+  }
+  return 'Not a certificate or request';
+}
+
+function CertTabContent({ tab }: { tab: DocTab }) {
+  if (tab.cert) {
+    return <CertView cert={tab.cert} certError={tab.certError} />;
+  }
+  if (tab.req) {
+    return <ReqView req={tab.req} reqError={tab.reqError} />;
+  }
+  return <div className="cert-empty">{certTabEmpty(tab)}</div>;
 }
 
 function App() {
@@ -112,11 +135,22 @@ function App() {
         const full = await fetchFullHex(fv.path, total);
         let cert: AsnCert | null = null;
         let certError: string | null = null;
+        let req: AsnReq | null = null;
+        let reqError: string | null = null;
         try {
           cert = await fetchCertView(fv.path);
         } catch (e) {
           certError = messageOf(e);
-          if (!/not an x\.509 certificate/i.test(certError)) {
+          if (/not an x\.509 certificate/i.test(certError)) {
+            try {
+              req = await fetchReqView(fv.path);
+            } catch (e2) {
+              reqError = messageOf(e2);
+              if (!/not a certificate request/i.test(reqError)) {
+                setError(reqError);
+              }
+            }
+          } else {
             setError(certError);
           }
         }
@@ -132,9 +166,11 @@ function App() {
             hex: full,
             selected: fv.root,
             collapsed: new Set<number>(),
-            view: 'hex',
+            view: fv.typeHint === 'request' ? 'cert' : 'hex',
             cert,
             certError,
+            req,
+            reqError,
           },
         ]);
         setActiveId(id);
@@ -438,7 +474,7 @@ function App() {
                 onSelect={setActiveSelected}
               />
             ) : (
-              <CertView cert={active.cert} certError={active.certError} />
+              <CertTabContent tab={active} />
             )}
             <NodeHashBar path={active.file.path} offset={selected?.offset ?? null} />
           </section>
