@@ -15,7 +15,6 @@ kanban-plugin: board
 
 ## P1 Viewer MVP
 
-- [ ] T04 Wails v2 скелет (Go1.25+Node, app+cli, 3 ОС) #P1 #gui
 - [ ] T05 Дерево+hex+asn1parse dump + скролл-синхрон #P1 #gui
 - [ ] T06 Тип-бейдж + конвертер PEM↔DER↔Hex #P1 #formats
 - [ ] T07 Cert-view как Windows + хеши узла #P1 #certview
@@ -27,6 +26,8 @@ kanban-plugin: board
 
 ## Done
 
+- [x] T04 Wails v2 скелет (app+cli, bindings OpenFile/GetHex) #P1 #gui
+- [x] T02 fix: дженерик PEM-шапки (ATTRIBUTE CERTIFICATE и любые) #P0 #formats
 - [x] devcontainers backend+frontend (образы собраны, смок внутри зеленый) #setup
 - [x] T03 OID-словарь (847 записей, user dict) (docker: vet/test green) #P0 #core
 - [x] T02 Автодетект DER/PEM/Hex/Base64 (24 шапки, docker: vet/test green) #P0 #formats
