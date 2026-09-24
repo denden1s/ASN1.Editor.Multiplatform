@@ -9,6 +9,8 @@ import type { AsnFile, AsnNode } from './asn1';
 
 type Tab = 'hex' | 'dump';
 
+const SIDEBAR_KEY = 'asn1.sidebar.visible';
+
 function messageOf(e: unknown): string {
   if (e instanceof Error) {
     return e.message;
@@ -25,6 +27,36 @@ function App() {
   const [selected, setSelected] = useState<AsnNode | null>(null);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [tab, setTab] = useState<Tab>('hex');
+  const [sidebarVisible, setSidebarVisible] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarVisible((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(SIDEBAR_KEY, String(next));
+      } catch {
+        /* storage unavailable, ignore */
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [toggleSidebar]);
 
   const openPath = useCallback(async (raw: string) => {
     const p = raw.trim();
@@ -105,6 +137,14 @@ function App() {
   return (
     <div className="app">
       <header className="topbar">
+        <button
+          className="sidebtn"
+          onClick={toggleSidebar}
+          aria-label={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+          title="Toggle sidebar (Ctrl/Cmd+B)"
+        >
+          ◫
+        </button>
         <div className="brand">
           <span className="brand-mark">◈</span>
           <span>ASN.1 Viewer</span>
@@ -160,29 +200,35 @@ function App() {
         </div>
       )}
 
-      {!file ? (
-        <main className="empty">
-          <div className="empty-h">No file open</div>
-          <p className="empty-p">
-            Type a path above and press Enter, or drop a DER / PEM / HEX / Base64 file onto this
-            window.
-          </p>
-        </main>
-      ) : (
-        <main className="workspace">
-          <section className="pane tree-pane" aria-label="Structure">
+      <main className={sidebarVisible ? 'workspace workspace-side' : 'workspace workspace-full'}>
+        {sidebarVisible && (
+          <aside className="pane tree-pane" aria-label="Structure">
             <div className="pane-head">
               <span className="pane-title">Structure</span>
-              <span className="pane-sub">{nodes.length} nodes</span>
+              {file && <span className="pane-sub">{nodes.length} nodes</span>}
             </div>
-            <TreeView
-              root={file.root}
-              selectedOffset={selected?.offset ?? null}
-              collapsed={collapsed}
-              onSelect={setSelected}
-              onToggle={toggle}
-            />
-          </section>
+            {file ? (
+              <TreeView
+                root={file.root}
+                selectedOffset={selected?.offset ?? null}
+                collapsed={collapsed}
+                onSelect={setSelected}
+                onToggle={toggle}
+              />
+            ) : (
+              <div className="side-empty">No file open</div>
+            )}
+          </aside>
+        )}
+        {!file ? (
+          <div className="empty">
+            <div className="empty-h">No file open</div>
+            <p className="empty-p">
+              Type a path above and press Enter, or drop a DER / PEM / HEX / Base64 file onto this
+              window.
+            </p>
+          </div>
+        ) : (
           <section className="pane detail-pane" aria-label="Details">
             <div className="pane-head">
               <div className="tabs" role="tablist">
@@ -214,8 +260,8 @@ function App() {
               />
             )}
           </section>
-        </main>
-      )}
+        )}
+      </main>
 
       <footer className="statusbar">
         {selected ? (

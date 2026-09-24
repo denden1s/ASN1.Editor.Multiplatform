@@ -21,11 +21,11 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Сайдбар структуры + скрытие (VS Code) (@designer, чиню синтаксис) #P1 #gui
 - [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 
 ## Done
 
+- [x] Сайдбар структуры + скрытие (VS Code) (designer, tsc+vite green) #P1 #gui
 - [x] OCTET STRING printable/hex (tab/LF/CR + ` (0xHEX)`) #P1 #core
 - [x] BIT STRING только hex (`unused=N (0xHEX)`) #P1 #core
 - [x] BIT STRING hex в value (`unused/set + (0xHEX)`) #P1 #core
