@@ -134,9 +134,31 @@ func TestDecodeInputBase64(t *testing.T) {
 	}
 }
 
+func TestDecodeInputPEMArbitraryLabel(t *testing.T) {
+	// RFC 5755 attribute certificates and any other non-whitelisted
+	// armor must decode as long as the payload is valid DER.
+	for _, label := range []string{"ATTRIBUTE CERTIFICATE", "FOO"} {
+		pemBytes := encodePEM(t, label, seqIntDER)
+		der, got, enc, err := DecodeInput(pemBytes)
+		if err != nil {
+			t.Fatalf("%s: DecodeInput: %v", label, err)
+		}
+		if enc != EncodingPEM || got != label {
+			t.Fatalf("%s: got %v/%q", label, enc, got)
+		}
+		if !bytes.Equal(der, seqIntDER) {
+			t.Fatalf("%s: DER mismatch: % X", label, der)
+		}
+		if enc, got := Detect(pemBytes); enc != EncodingPEM || got != label {
+			t.Fatalf("%s: Detect: got %v/%q", label, enc, got)
+		}
+	}
+}
+
 func TestDecodeInputErrors(t *testing.T) {
 	badPEM := []byte("-----BEGIN CERTIFICATE-----\n###\n-----END CERTIFICATE-----\n")
-	fooPEM := encodePEM(t, "FOO", seqIntDER)
+	fooNotDER := encodePEM(t, "FOO", []byte("hello"))
+	opensshPEM := encodePEM(t, "OPENSSH PRIVATE KEY", []byte("openssh-key-v1\x00hello"))
 	helloB64 := []byte(base64.StdEncoding.EncodeToString([]byte("hello")))
 	cases := []struct {
 		name string
@@ -150,7 +172,8 @@ func TestDecodeInputErrors(t *testing.T) {
 		{"hex not DER", []byte("DEAD"), "HEX payload is not valid DER"},
 		{"base64 not DER", helloB64, "Base64 payload is not valid DER"},
 		{"malformed PEM", badPEM, "malformed PEM"},
-		{"unsupported PEM", fooPEM, "unsupported PEM label"},
+		{"PEM not DER", fooNotDER, `PEM "FOO" payload is not valid DER`},
+		{"openssh PEM", opensshPEM, `PEM "OPENSSH PRIVATE KEY" payload is not valid DER`},
 	}
 	for _, c := range cases {
 		if _, _, _, err := DecodeInput(c.raw); err == nil {

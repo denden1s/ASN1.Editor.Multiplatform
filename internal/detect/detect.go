@@ -5,7 +5,9 @@
 //
 //  1. Strict DER: the whole input must be exactly one top-level TLV
 //     (asn1.ParseDER; mirrors the TagLength == filesize check).
-//  2. PEM armor with one of the known OpenSSL labels.
+//  2. PEM armor with any -----BEGIN <LABEL>----- header (the payload
+//     must still parse as strict DER, which rejects non-DER armor such
+//     as OpenSSH keys with a clear error).
 //  3. Hex in five layouts: plain, 0x-prefixed, colon-, space- and
 //     comma-separated (separators and 0x prefixes are stripped).
 //  4. Whitespace-tolerant Base64 (standard encoding, then raw
@@ -54,9 +56,9 @@ func (e Encoding) String() string {
 	}
 }
 
-// pemLabels is the ported BinaryConverterVM PEM list: its 25 entries are
-// Base64 plus 24 OpenSSL armor labels below (PRIVATE KEY covers both the
-// EVP and PKCS#8-unencrypted entries; EVP read-any adds ANY PRIVATE KEY).
+// pemLabels lists the canonical two dozen OpenSSL armor labels (the ported
+// BinaryConverterVM PEM list). It is UI-hint data only; decoding accepts
+// any -----BEGIN <LABEL>----- armor and validates the payload as DER.
 var pemLabels = []string{
 	"CERTIFICATE",
 	"TRUSTED CERTIFICATE",
@@ -84,7 +86,8 @@ var pemLabels = []string{
 	"ANY PRIVATE KEY",
 }
 
-// PEMLabels returns a copy of the known PEM armor labels.
+// PEMLabels returns a copy of the canonical armor labels for UI hints.
+// Decoding is not limited to this list.
 func PEMLabels() []string {
 	out := make([]string, len(pemLabels))
 	copy(out, pemLabels)
@@ -102,15 +105,6 @@ func stripBOM(data []byte) []byte {
 	return data
 }
 
-func isKnownPEMLabel(label string) bool {
-	for _, known := range pemLabels {
-		if label == known {
-			return true
-		}
-	}
-	return false
-}
-
 func hasPEMArmor(data []byte) bool {
 	return bytes.Contains(data, []byte("-----BEGIN "))
 }
@@ -125,10 +119,10 @@ func trimPEMFrame(data []byte) []byte {
 }
 
 // Detect classifies data by shape and returns the encoding plus a label:
-// the root TagName for DER, the armor type for PEM, "HEX" for hex and
-// "Base64" for Base64. Detect never fails; unknown framing reports
-// (EncodingDER, "") meaning opaque binary. Use DecodeInput for validated
-// decoding.
+// the root TagName for DER, the armor type verbatim for PEM, "HEX" for
+// hex and "Base64" for Base64. Detect never fails; unknown framing
+// reports (EncodingDER, "") meaning opaque binary. Use DecodeInput for
+// validated decoding.
 func Detect(data []byte) (Encoding, string) {
 	data = stripBOM(data)
 	if len(data) == 0 {
@@ -139,7 +133,7 @@ func Detect(data []byte) (Encoding, string) {
 	}
 	if hasPEMArmor(data) {
 		if block, _ := pem.Decode(trimPEMFrame(data)); block != nil {
-			return EncodingPEM, block.Type
+			return EncodingPEM, strings.TrimSpace(block.Type)
 		}
 		return EncodingPEM, ""
 	}
@@ -191,13 +185,14 @@ func decodePEMBlock(data []byte) ([]byte, string, Encoding, error) {
 	if block == nil {
 		return nil, "", EncodingPEM, fmt.Errorf("detect: malformed PEM block")
 	}
-	if !isKnownPEMLabel(block.Type) {
-		return nil, "", EncodingPEM, fmt.Errorf("detect: unsupported PEM label %q", block.Type)
+	label := strings.TrimSpace(block.Type)
+	if label == "" {
+		return nil, "", EncodingPEM, fmt.Errorf("detect: empty PEM label")
 	}
 	if _, err := asn1.ParseDER(block.Bytes); err != nil {
-		return nil, "", EncodingPEM, fmt.Errorf("detect: PEM %q payload is not valid DER: %v", block.Type, err)
+		return nil, "", EncodingPEM, fmt.Errorf("detect: PEM %q payload is not valid DER: %v", label, err)
 	}
-	return block.Bytes, block.Type, EncodingPEM, nil
+	return block.Bytes, label, EncodingPEM, nil
 }
 
 // decodeHexText accepts the five WPF hex layouts: plain, 0x-prefixed and
