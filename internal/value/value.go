@@ -128,9 +128,9 @@ func bitStringDisplay(p []byte) string {
 	return fmt.Sprintf("unused=%d (0x%s)", unused, strings.ToUpper(hex.EncodeToString(data)))
 }
 
-// octetStringDisplay quotes printable ASCII, names an embedded DER TLV
+// octetStringDisplay quotes printable ASCII (plus tab/LF/CR), names an embedded DER TLV
 // ("contains SEQUENCE (5 bytes)") without decoding it further, and falls
-// back to "<N bytes>".
+// back to "<N bytes> (0xHEX)".
 func octetStringDisplay(p []byte) string {
 	if isPrintableASCII(p) {
 		return strconv.Quote(string(p))
@@ -138,11 +138,14 @@ func octetStringDisplay(p []byte) string {
 	if root, err := asn1.ParseDER(p); err == nil {
 		return fmt.Sprintf("contains %s (%d bytes)", root.TagName, len(p))
 	}
-	return fmt.Sprintf("<%d bytes>", len(p))
+	return fmt.Sprintf("<%d bytes> (0x%s)", len(p), strings.ToUpper(hex.EncodeToString(p)))
 }
 
 func isPrintableASCII(p []byte) bool {
 	for _, b := range p {
+		if b == 0x09 || b == 0x0A || b == 0x0D {
+			continue
+		}
 		if b < 0x20 || b > 0x7E {
 			return false
 		}
