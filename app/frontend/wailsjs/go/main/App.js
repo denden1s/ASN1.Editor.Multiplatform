@@ -17,3 +17,7 @@ export function NodeHash(arg1, arg2, arg3) {
 export function OpenFile(arg1) {
   return window['go']['main']['App']['OpenFile'](arg1);
 }
+
+export function ReqView(arg1) {
+  return window['go']['main']['App']['ReqView'](arg1);
+}

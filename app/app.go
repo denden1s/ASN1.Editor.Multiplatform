@@ -157,6 +157,28 @@ func (a *App) NodeHash(path string, offset int, algo string) (string, error) {
 	return certview.NodeHashTLV(der, offset, algo)
 }
 
+// ReqView decodes path to DER and returns the certificate request summary
+// for the request view. Non-requests yield certview.ErrNotRequest with
+// its "not a certificate request" text intact.
+func (a *App) ReqView(path string) (certview.Req, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return certview.Req{}, err
+	}
+	der, _, _, err := detect.DecodeInput(raw)
+	if err != nil {
+		return certview.Req{}, err
+	}
+	req, err := certview.ParseRequest(der)
+	if err != nil {
+		if errors.Is(err, certview.ErrNotRequest) {
+			return certview.Req{}, certview.ErrNotRequest
+		}
+		return certview.Req{}, err
+	}
+	return req, nil
+}
+
 // typeHint maps a detect label (usually the PEM armor type) to a coarse
 // file kind for the UI badge. Unknown labels yield "".
 func typeHint(label string) string {

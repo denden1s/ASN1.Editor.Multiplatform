@@ -10,3 +10,5 @@ export function GetHex(arg1:string,arg2:number,arg3:number):Promise<string>;
 export function NodeHash(arg1:string,arg2:number,arg3:string):Promise<string>;
 
 export function OpenFile(arg1:string):Promise<main.FileView>;
+
+export function ReqView(arg1:string):Promise<certview.Req>;

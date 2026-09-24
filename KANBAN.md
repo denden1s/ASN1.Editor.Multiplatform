@@ -24,9 +24,12 @@ kanban-plugin: board
 
 ## In Progress
 
+- [ ] CSR-view UI (@designer) #P1 #certview
+
 
 ## Done
 
+- [x] CSR-view backend (PKCS#10, ReqView, signatureValid) #P1 #certview
 - [x] T07b Cert-view UI + хеши (designer, tsc+vite green) #P1 #certview
 - [x] T07a Cert-view backend + хеши (internal/certview, CertView/NodeHash) #P1 #certview
 - [x] DnD чинка (EnableFileDrop + useDropTarget false) + no contextmenu #P1 #gui

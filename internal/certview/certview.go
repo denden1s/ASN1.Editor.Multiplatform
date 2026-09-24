@@ -367,43 +367,24 @@ func parseExtensionSequence(seq *asn1.Node, c *Cert) {
 // parseExtension decodes one Extension SEQUENCE into the Cert summary;
 // unknown OIDs land in Cert.Extensions.
 func parseExtension(e *asn1.Node, c *Cert) {
-	if !isSeqNode(e) || len(e.Children) < 2 || len(e.Children) > 3 {
+	dotted, critical, payload, ok := splitExtension(e)
+	if !ok {
 		return
 	}
-	oidNode := e.Children[0]
-	if !isOIDNode(oidNode) {
-		return
-	}
-	dotted := dottedOf(oidNode)
-	if dotted == "" {
-		return
-	}
-	last := e.Children[len(e.Children)-1]
-	if !isOctetStringNode(last) {
-		return
-	}
-	critical := false
-	if len(e.Children) == 3 {
-		flag := e.Children[1]
-		if !isBoolNode(flag) || len(flag.Payload()) != 1 {
-			return
-		}
-		critical = flag.Payload()[0] != 0x00
-	}
-	inner, err := asn1.ParseDER(last.Payload())
+	inner, err := asn1.ParseDER(payload)
 	if err != nil {
 		c.Extensions = append(c.Extensions, GenericExtension{
-			Oid: dotted, Critical: critical, Hex: hex.EncodeToString(last.Payload()),
+			Oid: dotted, Critical: critical, Hex: hex.EncodeToString(payload),
 		})
 		return
 	}
 	switch dotted {
 	case "2.5.29.17":
-		parseSubjectAltName(inner, c)
+		c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, collectSANs(inner)...)
 	case "2.5.29.15":
-		parseKeyUsage(inner, c)
+		c.KeyUsage = append(c.KeyUsage, collectKeyUsage(inner)...)
 	case "2.5.29.37":
-		parseExtendedKeyUsage(inner, c)
+		c.ExtendedKeyUsage = append(c.ExtendedKeyUsage, collectEKU(inner)...)
 	case "2.5.29.19":
 		parseBasicConstraints(inner, c)
 	case "2.5.29.14":
@@ -414,17 +395,45 @@ func parseExtension(e *asn1.Node, c *Cert) {
 		parseAuthorityKeyID(inner, c)
 	default:
 		c.Extensions = append(c.Extensions, GenericExtension{
-			Oid: dotted, Critical: critical, Hex: hex.EncodeToString(last.Payload()),
+			Oid: dotted, Critical: critical, Hex: hex.EncodeToString(payload),
 		})
 	}
 }
 
-// parseSubjectAltName renders GeneralNames: dNSName/rfc822Name/URI as
+// splitExtension extracts an Extension SEQUENCE as dotted OID, critical
+// flag and the OCTET STRING payload (inner DER bytes).
+func splitExtension(e *asn1.Node) (dotted string, critical bool, payload []byte, ok bool) {
+	if !isSeqNode(e) || len(e.Children) < 2 || len(e.Children) > 3 {
+		return "", false, nil, false
+	}
+	oidNode := e.Children[0]
+	if !isOIDNode(oidNode) {
+		return "", false, nil, false
+	}
+	if dotted = dottedOf(oidNode); dotted == "" {
+		return "", false, nil, false
+	}
+	last := e.Children[len(e.Children)-1]
+	if !isOctetStringNode(last) {
+		return "", false, nil, false
+	}
+	if len(e.Children) == 3 {
+		flag := e.Children[1]
+		if !isBoolNode(flag) || len(flag.Payload()) != 1 {
+			return "", false, nil, false
+		}
+		critical = flag.Payload()[0] != 0x00
+	}
+	return dotted, critical, last.Payload(), true
+}
+
+// collectSANs renders GeneralNames: dNSName/rfc822Name/URI as
 // strings, iPAddress dotted (IPv6 via net.IP), directoryName as an RDN
 // summary, otherName/registeredID as OID/hex, the rest as tag/hex.
-func parseSubjectAltName(inner *asn1.Node, c *Cert) {
+func collectSANs(inner *asn1.Node) []string {
+	var out []string
 	if !isSeqNode(inner) {
-		return
+		return out
 	}
 	for _, gn := range inner.Children {
 		if gn.Tag.Class != asn1.ClassContextSpecific {
@@ -437,48 +446,50 @@ func parseSubjectAltName(inner *asn1.Node, c *Cert) {
 				seqNode = gn.Children[0]
 			}
 			if isSeqNode(seqNode) && len(seqNode.Children) >= 2 && isOIDNode(seqNode.Children[0]) {
-				c.SubjectAlternativeNames = append(c.SubjectAlternativeNames,
+				out = append(out,
 					"otherName:"+resolver.FriendlyOrDotted(seqNode.Children[0].Payload())+
 						":"+hex.EncodeToString(seqNode.Children[1].Payload()))
 			} else {
-				c.SubjectAlternativeNames = append(c.SubjectAlternativeNames,
+				out = append(out,
 					"otherName:"+hex.EncodeToString(gn.Payload()))
 			}
 		case 1: // rfc822Name
-			c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, "email:"+string(gn.Payload()))
+			out = append(out, "email:"+string(gn.Payload()))
 		case 2: // dNSName
-			c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, "DNS:"+string(gn.Payload()))
+			out = append(out, "DNS:"+string(gn.Payload()))
 		case 4: // directoryName [4] EXPLICIT Name
 			if len(gn.Children) == 1 && isSeqNode(gn.Children[0]) {
 				s, _ := parseName(gn.Children[0])
-				c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, "DN:"+s)
+				out = append(out, "DN:"+s)
 			} else {
-				c.SubjectAlternativeNames = append(c.SubjectAlternativeNames,
+				out = append(out,
 					"directoryName:"+hex.EncodeToString(gn.Payload()))
 			}
 		case 6: // uniformResourceIdentifier
-			c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, "URI:"+string(gn.Payload()))
+			out = append(out, "URI:"+string(gn.Payload()))
 		case 7: // iPAddress
 			b := gn.Payload()
 			if len(b) == 4 || len(b) == 16 {
-				c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, "IP:"+net.IP(b).String())
+				out = append(out, "IP:"+net.IP(b).String())
 			} else {
-				c.SubjectAlternativeNames = append(c.SubjectAlternativeNames, "IP:"+hex.EncodeToString(b))
+				out = append(out, "IP:"+hex.EncodeToString(b))
 			}
 		case 8: // registeredID
-			c.SubjectAlternativeNames = append(c.SubjectAlternativeNames,
+			out = append(out,
 				"RID:"+resolver.FriendlyOrDotted(gn.Payload()))
 		default: // x400Address [3], ediPartyName [5], ...
-			c.SubjectAlternativeNames = append(c.SubjectAlternativeNames,
+			out = append(out,
 				gn.TagName+":"+hex.EncodeToString(gn.Payload()))
 		}
 	}
+	return out
 }
 
-// parseKeyUsage collects the set RFC 5280 usage bit names, MSB-first.
-func parseKeyUsage(inner *asn1.Node, c *Cert) {
+// collectKeyUsage lists the set RFC 5280 usage bit names, MSB-first.
+func collectKeyUsage(inner *asn1.Node) []string {
+	var out []string
 	if !isBitStringNode(inner) || len(inner.Payload()) == 0 {
-		return
+		return out
 	}
 	p := inner.Payload()
 	data := p[1:]
@@ -486,26 +497,29 @@ func parseKeyUsage(inner *asn1.Node, c *Cert) {
 		for bit := 0; bit < 8; bit++ {
 			idx := i*8 + bit
 			if idx >= len(keyUsageNames) {
-				return
+				return out
 			}
 			if b&(0x80>>uint(bit)) != 0 {
-				c.KeyUsage = append(c.KeyUsage, keyUsageNames[idx])
+				out = append(out, keyUsageNames[idx])
 			}
 		}
 	}
+	return out
 }
 
-// parseExtendedKeyUsage lists EKU OIDs friendly (dotted fallback).
-func parseExtendedKeyUsage(inner *asn1.Node, c *Cert) {
+// collectEKU lists EKU OIDs friendly (dotted fallback).
+func collectEKU(inner *asn1.Node) []string {
+	var out []string
 	if !isSeqNode(inner) {
-		return
+		return out
 	}
 	for _, o := range inner.Children {
 		if !isOIDNode(o) {
 			continue
 		}
-		c.ExtendedKeyUsage = append(c.ExtendedKeyUsage, resolver.FriendlyOrDotted(o.Payload()))
+		out = append(out, resolver.FriendlyOrDotted(o.Payload()))
 	}
+	return out
 }
 
 // parseBasicConstraints decodes cA plus optional pathLenConstraint;
