@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"asn1editor/internal/asn1"
+	"asn1editor/internal/certview"
 	"asn1editor/internal/detect"
 	"asn1editor/internal/oid"
 	"asn1editor/internal/value"
@@ -117,6 +119,42 @@ func (a *App) GetHex(path string, offset, length int) (string, error) {
 		return "", fmt.Errorf("asn1editor: range [%d, %d) out of %d DER bytes", offset, offset+length, len(der))
 	}
 	return hex.EncodeToString(der[offset : offset+length]), nil
+}
+
+// CertView decodes path to DER and returns the certificate summary for
+// the cert view. Non-certificates yield certview.ErrNotCertificate with
+// its "not an X.509 certificate" text intact.
+func (a *App) CertView(path string) (certview.Cert, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return certview.Cert{}, err
+	}
+	der, _, _, err := detect.DecodeInput(raw)
+	if err != nil {
+		return certview.Cert{}, err
+	}
+	cert, err := certview.ParseCertificate(der)
+	if err != nil {
+		if errors.Is(err, certview.ErrNotCertificate) {
+			return certview.Cert{}, certview.ErrNotCertificate
+		}
+		return certview.Cert{}, err
+	}
+	return cert, nil
+}
+
+// NodeHash returns the lowercase hex hash (md5/sha1/sha256/sha384/sha512)
+// of the full TLV (header included) of the node starting at offset.
+func (a *App) NodeHash(path string, offset int, algo string) (string, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	der, _, _, err := detect.DecodeInput(raw)
+	if err != nil {
+		return "", err
+	}
+	return certview.NodeHashTLV(der, offset, algo)
 }
 
 // typeHint maps a detect label (usually the PEM armor type) to a coarse

@@ -24,9 +24,12 @@ kanban-plugin: board
 
 ## In Progress
 
+- [ ] T07b Cert-view UI + хеши (@designer) #P1 #certview
+
 
 ## Done
 
+- [x] T07a Cert-view backend + хеши (internal/certview, CertView/NodeHash) #P1 #certview
 - [x] DnD чинка (EnableFileDrop + useDropTarget false) + no contextmenu #P1 #gui
 - [x] Вкладки файлов + DnD пачкой (designer, tsc+vite green, часть T08) #P1 #gui
 - [x] OCTET nested expansion (инлайн `TAG { ... }`, EOC-guard) #P1 #core
