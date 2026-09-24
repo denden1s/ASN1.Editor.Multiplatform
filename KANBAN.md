@@ -15,17 +15,18 @@ kanban-plugin: board
 
 ## P1 Viewer MVP
 
-(пусто — все в работе/готово)
 - [ ] T06 Тип-бейдж + конвертер PEM↔DER↔Hex #P1 #formats
 - [ ] T07 Cert-view как Windows + хеши узла #P1 #certview
 - [ ] T08 Табы + split v/h + session backup #P1 #ui
 
 ## In Progress
 
+- [ ] T05c Показ значений в UI (@designer) #P1 #gui
 - [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 
 ## Done
 
+- [x] T05b Декод значений полей backend (internal/value + NodeDTO.value) #P1 #core
 - [x] T05 Дерево+hex+dump UI (designer, tsc+vite green) #P1 #gui
 - [x] T04 Wails v2 скелет (app+cli, bindings OpenFile/GetHex) #P1 #gui
 - [x] T02 fix: дженерик PEM-шапки (ATTRIBUTE CERTIFICATE и любые) #P0 #formats

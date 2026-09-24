@@ -8,6 +8,7 @@ export namespace main {
 	    tag: string;
 	    tagName: string;
 	    oidName: string;
+	    value: string;
 	    hasChildren: boolean;
 	    children: NodeDTO[];
 	
@@ -24,6 +25,7 @@ export namespace main {
 	        this.tag = source["tag"];
 	        this.tagName = source["tagName"];
 	        this.oidName = source["oidName"];
+	        this.value = source["value"];
 	        this.hasChildren = source["hasChildren"];
 	        this.children = this.convertValues(source["children"], NodeDTO);
 	    }

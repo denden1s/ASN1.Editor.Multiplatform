@@ -10,6 +10,7 @@ import (
 	"asn1editor/internal/asn1"
 	"asn1editor/internal/detect"
 	"asn1editor/internal/oid"
+	"asn1editor/internal/value"
 )
 
 // App struct
@@ -33,7 +34,9 @@ var oidResolver = oid.New()
 
 // NodeDTO is the JSON contract for one TLV node. Children is null for
 // leaf nodes (check HasChildren). OIDName carries FriendlyOrDotted for
-// OBJECT IDENTIFIER nodes and is empty otherwise.
+// OBJECT IDENTIFIER nodes and is empty otherwise. Value holds the
+// human-readable payload from value.Display, or "" when the node has no
+// scalar value (constructed or non-universal tags).
 type NodeDTO struct {
 	Offset      int       `json:"offset"`
 	HeaderLen   int       `json:"headerLen"`
@@ -42,6 +45,7 @@ type NodeDTO struct {
 	Tag         string    `json:"tag"`
 	TagName     string    `json:"tagName"`
 	OIDName     string    `json:"oidName"`
+	Value       string    `json:"value"`
 	HasChildren bool      `json:"hasChildren"`
 	Children    []NodeDTO `json:"children"`
 }
@@ -142,6 +146,7 @@ func toNodeDTO(n *asn1.Node) NodeDTO {
 		Depth:       n.Depth,
 		Tag:         tagString(n.Tag),
 		TagName:     n.TagName,
+		Value:       value.Display(n),
 		HasChildren: len(n.Children) > 0,
 	}
 	if n.Tag.Class == asn1.ClassUniversal && n.Tag.Number == 6 {

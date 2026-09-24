@@ -20,3 +20,4 @@ go.work.sum
 app/frontend/node_modules/
 app/frontend/dist/
 app/build/bin/
+app/frontend/package.json.md5
