@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { AsnNode } from '../asn1';
-import { childNodes, nodeTotal } from '../asn1';
+import { childNodes, nodeTotal, nodeValue } from '../asn1';
 
 interface TreeViewProps {
   root: AsnNode;
@@ -41,6 +41,7 @@ function TreeNode({ node, depth, selectedOffset, collapsed, onSelect, onToggle }
   const kids = childNodes(node);
   const isCollapsed = collapsed.has(node.offset);
   const isSelected = selectedOffset === node.offset;
+  const val = nodeValue(node);
 
   return (
     <>
@@ -67,6 +68,11 @@ function TreeNode({ node, depth, selectedOffset, collapsed, onSelect, onToggle }
         <span className="tname">{node.tagName}</span>
         {node.oidName && <span className="oid">{node.oidName}</span>}
         <span className="ttag">{node.tag}</span>
+        {val && (
+          <span className="tval" title={val}>
+            {val}
+          </span>
+        )}
         <span className="tmeta">
           @{node.offset} · l={node.length} · +{node.headerLen} hdr · {nodeTotal(node)} B
         </span>

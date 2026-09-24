@@ -21,11 +21,11 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] T05c Показ значений в UI (@designer) #P1 #gui
 - [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
 
 ## Done
 
+- [x] T05c Показ значений в UI (designer, tsc+vite green) #P1 #gui
 - [x] T05b Декод значений полей backend (internal/value + NodeDTO.value) #P1 #core
 - [x] T05 Дерево+hex+dump UI (designer, tsc+vite green) #P1 #gui
 - [x] T04 Wails v2 скелет (app+cli, bindings OpenFile/GetHex) #P1 #gui

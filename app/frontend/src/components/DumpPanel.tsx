@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import type { AsnNode } from '../asn1';
-import { flattenTree, formatDumpLine } from '../asn1';
+import { flattenTree, formatDumpLine, nodeValue } from '../asn1';
 
 interface DumpPanelProps {
   root: AsnNode;
@@ -26,7 +26,7 @@ export function DumpPanel({ root, selectedOffset, onSelect }: DumpPanelProps) {
           data-dump={n.offset}
           className={n.offset === selectedOffset ? 'dline dline-selected' : 'dline'}
           onClick={() => onSelect(n)}
-          title={`${n.tag} · offset ${n.offset}`}
+          title={nodeValue(n) ? `${n.tag} · offset ${n.offset} · ${nodeValue(n)}` : `${n.tag} · offset ${n.offset}`}
         >
           {formatDumpLine(n)}
         </button>

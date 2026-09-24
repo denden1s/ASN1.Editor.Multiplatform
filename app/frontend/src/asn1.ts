@@ -14,6 +14,11 @@ export function childNodes(n: AsnNode): AsnNode[] {
   return n.children ?? [];
 }
 
+/** Decoded value text; empty for constructed/context nodes. Never undefined. */
+export function nodeValue(n: AsnNode): string {
+  return n.value ?? '';
+}
+
 /** Pre-order flatten (iterative, safe for deep trees). */
 export function flattenTree(root: AsnNode): AsnNode[] {
   const out: AsnNode[] = [];
@@ -74,7 +79,7 @@ export async function fetchFullHex(path: string, total: number): Promise<string>
 
 /**
  * One asn1parse-style line per node:
- * `offset : d=depth hl=headerLen l=length : indent [cons:] tagName [: oid]`
+ * `offset : d=depth hl=headerLen l=length : indent [cons:] tagName [: oid] [: value]`
  */
 export function formatDumpLine(n: AsnNode): string {
   const off = String(n.offset).padStart(6, ' ');
@@ -82,5 +87,7 @@ export function formatDumpLine(n: AsnNode): string {
   const indent = '  '.repeat(Math.max(0, n.depth));
   const cons = n.hasChildren ? 'cons: ' : '';
   const oid = n.oidName ? ` : ${n.oidName}` : '';
-  return `${off}  d=${n.depth}  hl=${n.headerLen}  l=${len}  ${indent}${cons}${n.tagName}${oid}`;
+  const v = nodeValue(n);
+  const val = v ? ` : ${v}` : '';
+  return `${off}  d=${n.depth}  hl=${n.headerLen}  l=${len}  ${indent}${cons}${n.tagName}${oid}${val}`;
 }

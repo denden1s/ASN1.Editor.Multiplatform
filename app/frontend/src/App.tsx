@@ -4,7 +4,7 @@ import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime';
 import { DumpPanel } from './components/DumpPanel';
 import { HexView } from './components/HexView';
 import { TreeView } from './components/TreeView';
-import { fetchFullHex, findDeepest, flattenTree, hexToBytes, nodeTotal } from './asn1';
+import { fetchFullHex, findDeepest, flattenTree, hexToBytes, nodeTotal, nodeValue } from './asn1';
 import type { AsnFile, AsnNode } from './asn1';
 
 type Tab = 'hex' | 'dump';
@@ -223,6 +223,7 @@ function App() {
             sel @{selected.offset} · hl={selected.headerLen} · l={selected.length} · total=
             {nodeTotal(selected)} · d={selected.depth} · {selected.tagName} ({selected.tag})
             {selected.oidName ? ` · ${selected.oidName}` : ''}
+            {nodeValue(selected) ? ` = ${nodeValue(selected)}` : ''}
           </span>
         ) : (
           <span>—</span>
