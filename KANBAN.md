@@ -17,9 +17,9 @@ kanban-plugin: board
 
 ## P1 Viewer MVP
 
-- [ ] T06 Тип-бейдж + конвертер PEM↔DER↔Hex #P1 #formats
-- [ ] T07 Cert-view как Windows + хеши узла #P1 #certview
-- [ ] T08 Табы + split v/h + session backup #P1 #ui
+- [ ] T06 Тип-бейдж + конвертер PEM↔DER↔Hex (бэкенд convert готов, нужен UI) #P1 #formats
+- [x] T07 Cert-view как Windows + хеши узла (+ CSR-запросы в той же вкладке) #P1 #certview
+- [ ] T08 Табы + split v/h + session backup (табы+DnD сделаны, остался split и backup) #P1 #ui
 
 
 ## In Progress
@@ -36,7 +36,7 @@ kanban-plugin: board
 - [x] OCTET nested expansion (инлайн `TAG { ... }`, EOC-guard) #P1 #core
 - [x] Сайдбар структуры + скрытие (VS Code) (designer, tsc+vite green) #P1 #gui
 - [x] OCTET STRING printable/hex (tab/LF/CR + ` (0xHEX)`) #P1 #core
-- [ ] Установить Go 1.25 + Node 20 + Wails CLI (блокер: `go not found`) #setup
+- [x] Установить Go 1.25 + Node 20 + Wails CLI на хост (для `wails dev`/GUI-сборки) #setup
 - [x] BIT STRING только hex (`unused=N (0xHEX)`) #P1 #core
 - [x] BIT STRING hex в value (`unused/set + (0xHEX)`) #P1 #core
 - [x] T05c Показ значений в UI (designer, tsc+vite green) #P1 #gui
