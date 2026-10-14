@@ -1,10 +1,19 @@
 import { GetHex } from '../wailsjs/go/main/App';
-import type { certview, main } from '../wailsjs/go/models';
+import type { certview, main, session } from '../wailsjs/go/models';
 
 export type AsnNode = main.NodeDTO;
 export type AsnFile = main.FileView;
 export type AsnCert = certview.Cert;
 export type AsnReq = certview.Req;
+export type AsnSession = session.State;
+
+/** Detail views persisted in the session. */
+export const VIEWS = ['hex', 'dump', 'cert', 'convert'] as const;
+export type View = (typeof VIEWS)[number];
+
+export function isView(v: unknown): v is View {
+  return typeof v === 'string' && (VIEWS as readonly string[]).includes(v);
+}
 
 /** Full byte length of a node: header + content. */
 export function nodeTotal(n: AsnNode): number {
