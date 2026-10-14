@@ -10,6 +10,7 @@ import (
 
 	"asn1editor/internal/asn1"
 	"asn1editor/internal/certview"
+	"asn1editor/internal/convert"
 	"asn1editor/internal/detect"
 	"asn1editor/internal/oid"
 	"asn1editor/internal/value"
@@ -177,6 +178,45 @@ func (a *App) ReqView(path string) (certview.Req, error) {
 		return certview.Req{}, err
 	}
 	return req, nil
+}
+
+// Convert reads path, decodes it to DER (any framing detect understands)
+// and re-encodes it into the format named by to. Accepted to values are
+// "pem", "hex", "base64" and "der-base64" (raw DER returned as Base64
+// text, because Wails does not carry binary reliably).
+func (a *App) Convert(path string, to string) (string, error) {
+	enc, err := convert.ParseFormat(to)
+	if err != nil {
+		return "", err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	der, label, _, err := detect.DecodeInput(raw)
+	if err != nil {
+		return "", err
+	}
+	return convert.Encode(der, label, enc)
+}
+
+// ConvertText converts text in the framing named by from into the
+// framing named by to. from accepts "der", "pem", "hex" and "base64";
+// to accepts "pem", "hex", "base64" and "der-base64".
+func (a *App) ConvertText(text string, from string, to string) (string, error) {
+	src, err := convert.ParseFormat(from)
+	if err != nil {
+		return "", err
+	}
+	dst, err := convert.ParseFormat(to)
+	if err != nil {
+		return "", err
+	}
+	der, label, err := convert.Decode(text, src)
+	if err != nil {
+		return "", err
+	}
+	return convert.Encode(der, label, dst)
 }
 
 // typeHint maps a detect label (usually the PEM armor type) to a coarse

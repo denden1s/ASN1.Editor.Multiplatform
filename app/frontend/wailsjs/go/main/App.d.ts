@@ -5,6 +5,10 @@ import {main} from '../models';
 
 export function CertView(arg1:string):Promise<certview.Cert>;
 
+export function Convert(arg1:string,arg2:string):Promise<string>;
+
+export function ConvertText(arg1:string,arg2:string,arg3:string):Promise<string>;
+
 export function GetHex(arg1:string,arg2:number,arg3:number):Promise<string>;
 
 export function NodeHash(arg1:string,arg2:number,arg3:string):Promise<string>;

@@ -6,6 +6,14 @@ export function CertView(arg1) {
   return window['go']['main']['App']['CertView'](arg1);
 }
 
+export function Convert(arg1, arg2) {
+  return window['go']['main']['App']['Convert'](arg1, arg2);
+}
+
+export function ConvertText(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ConvertText'](arg1, arg2, arg3);
+}
+
 export function GetHex(arg1, arg2, arg3) {
   return window['go']['main']['App']['GetHex'](arg1, arg2, arg3);
 }
