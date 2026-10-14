@@ -17,7 +17,7 @@ kanban-plugin: board
 
 ## P1 Viewer MVP
 
-- [ ] T06 Тип-бейдж + конвертер PEM↔DER↔Hex (нужен бэкенд convert + UI) #P1 #formats
+- [x] T06 Тип-бейдж + конвертер PEM↔DER↔Hex (convert-бэкенд + вкладка Convert) #P1 #formats
 - [x] T07 Cert-view как Windows + хеши узла (+ CSR-запросы в той же вкладке) #P1 #certview
 - [ ] T08 Табы + split v/h + session backup (табы+DnD сделаны, остался split и backup) #P1 #ui
 

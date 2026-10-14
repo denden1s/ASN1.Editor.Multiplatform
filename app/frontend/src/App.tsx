@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CertView as fetchCertView, OpenFile, ReqView as fetchReqView } from '../wailsjs/go/main/App';
 import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime';
 import { CertView } from './components/CertView';
+import { ConvertPanel } from './components/ConvertPanel';
 import { ReqView } from './components/ReqView';
 import { DumpPanel } from './components/DumpPanel';
 import { HexView } from './components/HexView';
@@ -10,7 +11,7 @@ import { TreeView } from './components/TreeView';
 import { fetchFullHex, findDeepest, flattenTree, hexToBytes, nodeTotal, nodeValue } from './asn1';
 import type { AsnCert, AsnFile, AsnNode, AsnReq } from './asn1';
 
-type View = 'hex' | 'dump' | 'cert';
+type View = 'hex' | 'dump' | 'cert' | 'convert';
 
 interface DocTab {
   id: number;
@@ -463,6 +464,14 @@ function App() {
                 >
                   Cert
                 </button>
+                <button
+                  role="tab"
+                  aria-selected={active.view === 'convert'}
+                  className={active.view === 'convert' ? 'tab tab-active' : 'tab'}
+                  onClick={() => setActiveView('convert')}
+                >
+                  Convert
+                </button>
               </div>
             </div>
             {active.view === 'hex' ? (
@@ -473,6 +482,8 @@ function App() {
                 selectedOffset={selected?.offset ?? null}
                 onSelect={setActiveSelected}
               />
+            ) : active.view === 'convert' ? (
+              <ConvertPanel path={active.file.path} label={baseName(active.file.path)} />
             ) : (
               <CertTabContent tab={active} />
             )}
