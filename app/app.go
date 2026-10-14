@@ -13,6 +13,7 @@ import (
 	"asn1editor/internal/convert"
 	"asn1editor/internal/detect"
 	"asn1editor/internal/oid"
+	"asn1editor/internal/session"
 	"asn1editor/internal/value"
 )
 
@@ -217,6 +218,24 @@ func (a *App) ConvertText(text string, from string, to string) (string, error) {
 		return "", err
 	}
 	return convert.Encode(der, label, dst)
+}
+
+// SaveSession validates and atomically writes the session state to path.
+// Invalid state (bad version, duplicate or empty paths, unknown view,
+// out-of-range activeIndex) is rejected before anything touches disk.
+func (a *App) SaveSession(path string, st session.State) error {
+	return session.Save(path, st)
+}
+
+// LoadSession reads the session state from path. A missing file returns
+// os.ErrNotExist, which the UI should treat as "first run".
+func (a *App) LoadSession(path string) (session.State, error) {
+	return session.Load(path)
+}
+
+// DefaultSessionPath returns the per-user session file location.
+func (a *App) DefaultSessionPath() (string, error) {
+	return session.DefaultPath()
 }
 
 // typeHint maps a detect label (usually the PEM armor type) to a coarse

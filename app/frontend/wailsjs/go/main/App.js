@@ -14,8 +14,16 @@ export function ConvertText(arg1, arg2, arg3) {
   return window['go']['main']['App']['ConvertText'](arg1, arg2, arg3);
 }
 
+export function DefaultSessionPath() {
+  return window['go']['main']['App']['DefaultSessionPath']();
+}
+
 export function GetHex(arg1, arg2, arg3) {
   return window['go']['main']['App']['GetHex'](arg1, arg2, arg3);
+}
+
+export function LoadSession(arg1) {
+  return window['go']['main']['App']['LoadSession'](arg1);
 }
 
 export function NodeHash(arg1, arg2, arg3) {
@@ -28,4 +36,8 @@ export function OpenFile(arg1) {
 
 export function ReqView(arg1) {
   return window['go']['main']['App']['ReqView'](arg1);
+}
+
+export function SaveSession(arg1, arg2) {
+  return window['go']['main']['App']['SaveSession'](arg1, arg2);
 }
