@@ -11,7 +11,7 @@ LDFLAGS := -s -w
 
 .DEFAULT_GOAL := help
 
-.PHONY: help cli cli-macos cli-linux cli-windows cli-all \
+.PHONY: help cli cli-macos cli-linux cli-windows cli-all test \
 	app-macos app-macos-universal app-linux app-windows app-installer-windows \
 	clean
 
@@ -22,6 +22,7 @@ help: ## показать таргеты
 	@echo "  make cli-windows           asn1cli под Windows (amd64)     -> dist/"
 	@echo "  make cli-all               всё выше разом"
 	@echo "  make cli                   нативный бинарь под текущий хост"
+	@echo "  make test                  gofmt/vet/test для ядра и app-модуля"
 	@echo "GUI (Wails, запускать НА целевой ОС):"
 	@echo "  make app-macos             .app под macOS (текущий arch)"
 	@echo "  make app-macos-universal   .app под macOS (arm64+amd64)"
@@ -51,6 +52,11 @@ cli: ## нативный CLI под текущий хост
 	@mkdir -p $(DIST)
 	@exe=""; [ "$$(go env GOOS)" = windows ] && exe=".exe"; \
 	go build -trimpath -ldflags "$(LDFLAGS)" -o $(DIST)/asn1cli$$exe $(CLI_PKG)
+
+test: ## gofmt + vet + test в корневом и app-модулях
+	gofmt -l . | tee /dev/stderr | (! read)
+	go vet ./... && go test ./...
+	cd app && gofmt -l . | tee /dev/stderr | (! read) && go vet ./... && go test ./...
 
 # --- GUI: только делегирование в app/Makefile ------------------------------
 app-macos:
